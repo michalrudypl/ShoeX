@@ -7,11 +7,11 @@ from typing import Dict, Tuple
 
 import pandas as pd
 
-from scrapers.adidas import Adidas  # Assuming these modules exist
+from scrapers.adidas import Adidas
 from scrapers.eobuwie import Eobuwie
 from scrapers.nike import Nike
 from scrapers.stockx import StockX
-from shoes_purchase_analyzer import Analyzer  # Assuming this module exists
+from shoes_purchase_analyzer import Analyzer
 
 # Initialize logging
 logging.basicConfig(
@@ -22,6 +22,8 @@ logging.basicConfig(
 scrapers = (
     StockX(),
     Nike(),
+    Eobuwie(),
+    Adidas(),
 )
 
 

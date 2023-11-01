@@ -39,7 +39,6 @@ class Analyzer:
     def format_df(self) -> pd.DataFrame:
         """Format the DataFrame for analysis."""
         df = self.df.dropna(subset=["id"]).copy()
-
         cols_to_format = [
             "averageDeadstockPrice",
             "highestBid",
@@ -47,7 +46,6 @@ class Analyzer:
             "volatility",
             "lastSale",
         ]
-
         df = self.usd_prices_to_pln(df, cols_to_format)
 
         delivery_cost_usd = 5.45
@@ -58,13 +56,20 @@ class Analyzer:
             - delivery_cost_usd * self.usd_to_pln
         ).round(2)
 
+        df["profitOrLoss"] = df["finalPriceAfterTaxes"] - df["price"]
         return df
 
     def analyze(self) -> pd.DataFrame:
         """Perform the analysis and return filtered DataFrame."""
         df = self.format_df()
-        df["priceDiff"] = df["finalPriceAfterTaxes"] - df["price"]
 
-        return df[
-            (df["priceDiff"] > 50) & (df["numberOfBids"] > 0) & (df["volatility"] < 1)
-        ]
+        filter_conditions = (
+            (df["profitOrLoss"] > 50)
+            & (df["numberOfBids"] > 0)
+            & (df["volatility"] < 1)
+        )
+
+        filtered_df = df[filter_conditions]
+        logging.info(f"Found {len(filtered_df)} profitable opportunities.")
+
+        return filtered_df

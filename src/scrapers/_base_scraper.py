@@ -2,7 +2,9 @@
 
 import abc
 import logging
+from pathlib import Path
 from typing import Any
+import pandas as pd
 
 import requests
 
@@ -34,6 +36,15 @@ class BaseScraper(abc.ABC):
     def parse(self) -> Any:
         """Abstract method for parsing the data."""
         pass
+
+    @staticmethod
+    def save_file(df: pd.DataFrame, file_name: str) -> None:
+        """Saving files."""
+        xlsx_results_path = Path("xlsx_results")
+        logging.info(f"Saving file: {file_name}")
+
+        saving_path = Path(xlsx_results_path / f"{file_name}.xlsx")
+        df.to_excel(saving_path, index=False)
 
     def _get(self, params: dict) -> requests.Response:
         """Perform GET request and handle exceptions."""

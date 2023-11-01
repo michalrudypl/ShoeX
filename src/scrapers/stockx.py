@@ -12,6 +12,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
+from ._base_scraper import BaseScraper
+
 # Initialize logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -21,21 +23,28 @@ logging.basicConfig(
 class StockX:
     """Scraper for fetching shoe data from StockX."""
 
-    def __init__(self, query: str = "jordan", results_per_page: str = "1000"):
+    def __init__(self, results_per_page: str = "1000"):
         """Initialize the scraper with search parameters."""
         logging.info("Initializing StockX scraper.")
 
-        self.query = query
+        self.query = [
+            "jordan",
+            "nike",
+            "adidas",
+            "reebok",
+            "puma",
+            "new balance",
+        ]
         self.results_per_page = results_per_page
         self.driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install())
         )
 
-    def get_data(self) -> Dict:
-        """Fetch the raw data from the StockX API."""
-        logging.info("Fetching data from StockX.")
+    def get_data(self, brand: str) -> Dict:
+        """Fetch the raw data from the StockX API for a specific brand."""
+        logging.info(f"Fetching data from StockX for brand {brand}.")
 
-        url = f"https://stockx.com/api/browse?_search={self.query}&resultsPerPage={self.results_per_page}"
+        url = f"https://stockx.com/api/browse?_search={brand}&resultsPerPage={self.results_per_page}"
         self.driver.get(url)
         time.sleep(2)  # Allow the page to load
         page_source = self.driver.page_source
@@ -67,13 +76,20 @@ class StockX:
         """Main function that orchestrates the scraping process."""
         logging.info("Starting StockX scraper.")
 
-        data = self.get_data()
-        df = self.loop_data(data)
+        final_df = pd.DataFrame()
+
+        for brand in self.query:
+            data = self.get_data(brand)
+            df = self.loop_data(data)
+
+            final_df = pd.concat([final_df, df], ignore_index=True)
 
         if queue is not None:
-            queue.put((self.__class__.__name__, df))
+            queue.put((self.__class__.__name__, final_df))
             logging.info("DataFrame added to queue.")
 
         self.driver.close()
+
+        BaseScraper.save_file(final_df, self.__class__.__name__)
 
         logging.info("StockX scraper finished.")
