@@ -50,11 +50,17 @@ class StockX:
         logging.info("Parsing raw data into DataFrame.")
 
         product_list = [
-            {key: product["market"].get(key, None) for key in product["market"]}
+            {
+                **{
+                    "Title": product.get("title", None),
+                    "styleId": product.get("styleId", None),
+                },
+                **{key: product["market"].get(key, None) for key in product["market"]},
+            }
             for product in data["Products"]
         ]
-        logging.info("Data parsed successfully.")
 
+        logging.info("Data parsed successfully.")
         return pd.DataFrame(product_list)
 
     def run(self, queue: Queue) -> None:

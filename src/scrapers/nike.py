@@ -52,7 +52,7 @@ class Nike(BaseScraper):
                 product_price = product["price"]["currentPrice"]
                 product_link = f"https://www.nike.com/pl/{product['url'][14:]}"
 
-                data["styleId"].append(product_id)
+                data["id"].append(product_id)
                 data["price"].append(product_price)
                 data["link"].append(product_link)
 

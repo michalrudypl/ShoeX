@@ -80,6 +80,7 @@ def main() -> None:
 
     df_stockx, df_scrapers = run_scrapers()
     df_merged = merge_dataframes(df_stockx, df_scrapers)
+    df_merged.to_excel("merged.xlsx", index=False)
 
     logging.info("DataFrames merged. Starting analysis.")
 
