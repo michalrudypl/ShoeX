@@ -3,6 +3,7 @@
 import json
 import time
 from multiprocessing.managers import DictProxy
+from queue import Queue
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -79,7 +80,7 @@ class StockX:
         df = pd.DataFrame(product_list)
         return df
 
-    def run(self, manager_dict: DictProxy = None) -> pd.DataFrame:
+    def run(self, queue: Queue = None) -> pd.DataFrame:
         """Main runner function for the scraper."""
         with webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install())
@@ -87,7 +88,7 @@ class StockX:
             data = self.get_data()
             df_concated = self.loop_data(data)
 
-        if manager_dict is not None:
-            manager_dict[self.__class__.__name__] = df_concated
+        if queue is not None:
+            queue.put((self.__class__.__name__, df_concated))
 
         return df_concated

@@ -1,6 +1,7 @@
 """Eobuwie scraper."""
 import logging
 import multiprocessing.managers
+from queue import Queue
 
 import pandas as pd
 import requests
@@ -42,30 +43,6 @@ class Eobuwie(BaseScraper):
             ],
         }
 
-    def run(
-        self, manager_dict: multiprocessing.managers.DictProxy = None
-    ) -> pd.DataFrame:
-        logging.info("Start scraping %s", self.__class__.__name__)
-
-        for category in self.categories:
-            self.params["categories[]"] = category
-            while True:
-                df = self.parse(self._get(params=self.params))
-
-                if df.empty is False:
-                    self.dfs.append(df)
-                    self.params["page"] += 1
-                else:
-                    break
-
-        df_concated = pd.concat(self.dfs)
-        df_concated["shop"] = self.__class__.__name__
-
-        if manager_dict is not None:
-            manager_dict[self.__class__.__name__] = df_concated
-
-        return df_concated
-
     def parse(self, response: requests.Response) -> pd.DataFrame:
         """Parsing."""
 
@@ -93,3 +70,25 @@ class Eobuwie(BaseScraper):
             )
 
         return pd.DataFrame(data)
+
+    def run(self, queue: Queue = None) -> pd.DataFrame:
+        logging.info("Start scraping %s", self.__class__.__name__)
+
+        for category in self.categories:
+            self.params["categories[]"] = category
+            while True:
+                df = self.parse(self._get(params=self.params))
+
+                if df.empty is False:
+                    self.dfs.append(df)
+                    self.params["page"] += 1
+                else:
+                    break
+
+        df_concated = pd.concat(self.dfs)
+        df_concated["shop"] = self.__class__.__name__
+
+        if queue is not None:
+            queue.put((self.__class__.__name__, df_concated))
+
+        return df_concated
