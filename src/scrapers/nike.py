@@ -1,6 +1,5 @@
 """Nike scraper."""
 import logging
-import multiprocessing.managers
 from queue import Queue
 
 import pandas as pd
@@ -31,7 +30,7 @@ class Nike(BaseScraper):
         )
 
     def parse(self, response: requests.Response) -> pd.DataFrame:
-        data = {"id": [], "price": [], "link": []}
+        data: dict = {"id": [], "price": [], "link": []}
 
         products = response.json()["data"]["products"]["products"]
 
@@ -46,7 +45,7 @@ class Nike(BaseScraper):
 
         return pd.DataFrame(data)
 
-    def run(self, queue: Queue = None) -> pd.DataFrame:
+    def run(self, queue: Queue) -> None:
         logging.info("Start scraping %s", self.__class__.__name__)
 
         anchor = 0
@@ -66,9 +65,6 @@ class Nike(BaseScraper):
                     break
 
         df_concated = pd.concat(self.dfs)
-        df_concated["shop"] = self.__class__.__name__
 
         if queue is not None:
             queue.put((self.__class__.__name__, df_concated))
-
-        return df_concated

@@ -1,6 +1,5 @@
 """Adidas scraper."""
 import logging
-import multiprocessing.managers
 from queue import Queue
 
 import pandas as pd
@@ -15,7 +14,7 @@ class Adidas(BaseScraper):
     def __init__(self) -> None:
         super().__init__()
         self.url = "https://www.adidas.pl/api/plp/content-engine"
-        self.dfs = []
+        self.dfs: list = []
         self.headers[
             "user-agent"
         ] = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36"  # noqa: E501
@@ -33,7 +32,7 @@ class Adidas(BaseScraper):
         if len(products) <= 0:
             return pd.DataFrame()
 
-        data = {"id": [], "price": [], "link": []}
+        data: dict = {"id": [], "price": [], "link": []}
 
         for product in products:
             data["id"].append(product["modelId"])
@@ -42,7 +41,7 @@ class Adidas(BaseScraper):
 
         return pd.DataFrame(data)
 
-    def run(self, queue: Queue = None) -> pd.DataFrame:
+    def run(self, queue: Queue) -> None:
         logging.info("Start scraping %s", self.__class__.__name__)
 
         for query in self.queries:
@@ -59,9 +58,6 @@ class Adidas(BaseScraper):
                     break
 
         df_concated = pd.concat(self.dfs)
-        df_concated["shop"] = self.__class__.__name__
 
         if queue is not None:
             queue.put((self.__class__.__name__, df_concated))
-
-        return df_concated

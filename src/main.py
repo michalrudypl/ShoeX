@@ -1,3 +1,4 @@
+"""File with main run."""
 import threading
 from queue import Queue
 
@@ -19,7 +20,7 @@ scrapers = (
 
 def run_scrapers() -> tuple:
     """Run all scrapers and store the data in the manager."""
-    dfs_queue = Queue()
+    dfs_queue: Queue = Queue()
 
     threads = [threading.Thread(target=s.run, args=(dfs_queue,)) for s in scrapers]
 

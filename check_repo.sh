@@ -18,4 +18,5 @@ pylint src
 echo "Running mypy..."
 mypy src
 
-
+echo "Running bandit..."
+bandit src

@@ -1,6 +1,5 @@
 """Eobuwie scraper."""
 import logging
-import multiprocessing.managers
 from queue import Queue
 
 import pandas as pd
@@ -16,7 +15,7 @@ class Eobuwie(BaseScraper):
         """Init."""
         super().__init__()
         self.url = "https://eobuwie.com.pl/t-api/rest/search/eobuwie/v4/search"
-        self.dfs = []
+        self.dfs: list = []
         self.categories = ("meskie", "damskie")
         self.params = {
             "channel": "eobuwie",
@@ -46,7 +45,8 @@ class Eobuwie(BaseScraper):
     def parse(self, response: requests.Response) -> pd.DataFrame:
         """Parsing."""
 
-        def parse_model(value):
+        def parse_model(value: str) -> str:
+            """Parse model."""
             model_list = value.split()
             if len(model_list[-1]) < 5 and len(model_list) > 2:
                 return model_list[-2] + "-" + model_list[-1]
@@ -57,7 +57,7 @@ class Eobuwie(BaseScraper):
         if len(products) <= 0:
             return pd.DataFrame()
 
-        data = {"id": [], "price": [], "link": []}
+        data: dict = {"id": [], "price": [], "link": []}
 
         for product in products:
             data["id"].append(parse_model(product["values"]["model"]["value"]))
@@ -71,7 +71,7 @@ class Eobuwie(BaseScraper):
 
         return pd.DataFrame(data)
 
-    def run(self, queue: Queue = None) -> pd.DataFrame:
+    def run(self, queue: Queue) -> None:
         logging.info("Start scraping %s", self.__class__.__name__)
 
         for category in self.categories:
@@ -86,9 +86,6 @@ class Eobuwie(BaseScraper):
                     break
 
         df_concated = pd.concat(self.dfs)
-        df_concated["shop"] = self.__class__.__name__
 
         if queue is not None:
             queue.put((self.__class__.__name__, df_concated))
-
-        return df_concated

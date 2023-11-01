@@ -2,7 +2,6 @@
 
 import json
 import time
-from multiprocessing.managers import DictProxy
 from queue import Queue
 
 import pandas as pd
@@ -19,12 +18,13 @@ class StockX:
         """Initialize the scraper with query parameters."""
         self.query = query
         self.results_per_page = results_per_page
-        self.driver = None
+        self.driver = webdriver.Chrome(
+            service=ChromeService(ChromeDriverManager().install())
+        )
 
     def get_data(self) -> dict:
         """Fetch data from the StockX API."""
         url = f"https://stockx.com/api/browse?_search={self.query}&resultsPerPage={self.results_per_page}"
-        print(f"Fetching data from: {url}")
 
         self.driver.get(url)
         time.sleep(2)  # Allow 2 seconds for the page to load
@@ -35,7 +35,7 @@ class StockX:
 
         return json.loads(json_data)
 
-    def loop_data(self, data) -> pd.DataFrame:
+    def loop_data(self, data: dict) -> pd.DataFrame:
         """Loop through the data to create a DataFrame."""
         product_list = []
 
@@ -80,15 +80,12 @@ class StockX:
         df = pd.DataFrame(product_list)
         return df
 
-    def run(self, queue: Queue = None) -> pd.DataFrame:
+    def run(self, queue: Queue) -> None:
         """Main runner function for the scraper."""
-        with webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install())
-        ) as self.driver:
-            data = self.get_data()
-            df_concated = self.loop_data(data)
+        data = self.get_data()
+        df_concated = self.loop_data(data)
 
         if queue is not None:
             queue.put((self.__class__.__name__, df_concated))
 
-        return df_concated
+        self.driver.close()
