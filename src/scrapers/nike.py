@@ -60,6 +60,9 @@ class Nike(BaseScraper):
         return pd.DataFrame(data)
 
     def create_endpoint(self, attribute: str, anchor: int) -> str:
+        """
+        Creating endpoint.
+        """
         logging.info("Creating endpoint for Nike API.")
         endpoint_path = (
             f"/product_feed/rollup_threads/v2?filter=marketplace(PL)&"
@@ -70,7 +73,7 @@ class Nike(BaseScraper):
         return endpoint_path
 
     def run(self, queue: Optional[Queue] = None) -> None:
-        logging.info(f"Starting Nike scraper.")
+        logging.info("Start scraping %s", self.__class__.__name__)
         anchor: int = 0
 
         for attribute in self.attribute_ids:
@@ -89,6 +92,9 @@ class Nike(BaseScraper):
 
         logging.info("Nike scraping completed.")
 
+        df_concated = pd.concat(self.dfs)
+        self.save_file(df_concated, self.__class__.__name__)
+
         if queue:
-            queue.put((self.__class__.__name__, pd.concat(self.dfs)))
+            queue.put((self.__class__.__name__, df_concated))
             logging.info("Data added to queue.")
