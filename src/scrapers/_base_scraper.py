@@ -4,8 +4,8 @@ import abc
 import logging
 from pathlib import Path
 from typing import Any
-import pandas as pd
 
+import pandas as pd
 import requests
 
 
