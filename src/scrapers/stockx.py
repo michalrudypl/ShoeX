@@ -1,8 +1,9 @@
-"""Module for scraping data from StockX."""
+"""StockX scraper module."""
 
 import json
 import time
 from queue import Queue
+from typing import Dict
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -12,80 +13,41 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 class StockX:
-    """A scraper for fetching shoe data from StockX."""
+    """Scraper for fetching shoe data from StockX."""
 
     def __init__(self, query: str = "jordan", results_per_page: str = "1000"):
-        """Initialize the scraper with query parameters."""
+        """Initialize the scraper with search parameters."""
         self.query = query
         self.results_per_page = results_per_page
         self.driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install())
         )
 
-    def get_data(self) -> dict:
-        """Fetch data from the StockX API."""
+    def get_data(self) -> Dict:
+        """Fetch the raw data from the StockX API."""
         url = f"https://stockx.com/api/browse?_search={self.query}&resultsPerPage={self.results_per_page}"
-
         self.driver.get(url)
-        time.sleep(2)  # Allow 2 seconds for the page to load
-
+        time.sleep(2)  # Allow the page to load
         page_source = self.driver.page_source
         soup = BeautifulSoup(page_source, "html.parser")
         json_data = soup.find("pre").text
 
         return json.loads(json_data)
 
-    def loop_data(self, data: dict) -> pd.DataFrame:
-        """Loop through the data to create a DataFrame."""
-        product_list = []
-
-        for product in data["Products"]:
-            product_info = {
-                "Title": product["title"],
-                "shoeId": product["styleId"],
-                "LowestAsk": product["market"]["lowestAsk"],
-                "NumberOfAsks": product["market"]["numberOfAsks"],
-                "LastSale": product["market"]["lastSale"],
-                "lowestAskSize": product["market"]["lowestAskSize"],
-                "numberOfAsks": product["market"]["numberOfAsks"],
-                "hasAsks": product["market"]["hasAsks"],
-                "salesThisPeriod": product["market"]["salesThisPeriod"],
-                "salesLastPeriod": product["market"]["salesLastPeriod"],
-                "highestBid": product["market"]["highestBid"],
-                "highestBidSize": product["market"]["highestBidSize"],
-                "numberOfBids": product["market"]["numberOfBids"],
-                "hasBids": product["market"]["hasBids"],
-                "annualHigh": product["market"]["annualHigh"],
-                "annualLow": product["market"]["annualLow"],
-                "deadstockRangeLow": product["market"]["deadstockRangeLow"],
-                "deadstockRangeHigh": product["market"]["deadstockRangeHigh"],
-                "volatility": product["market"]["volatility"],
-                "deadstockSold": product["market"]["deadstockSold"],
-                "pricePremium": product["market"]["pricePremium"],
-                "averageDeadstockPrice": product["market"]["averageDeadstockPrice"],
-                "lastSale": product["market"]["lastSale"],
-                "lastSaleSize": product["market"]["lastSaleSize"],
-                "salesLast72Hours": product["market"]["salesLast72Hours"],
-                "changeValue": product["market"]["changeValue"],
-                "changePercentage": product["market"]["changePercentage"],
-                "absChangePercentage": product["market"]["absChangePercentage"],
-                "totalDollars": product["market"]["totalDollars"],
-                "lastLowestAskTime": product["market"]["lastLowestAskTime"],
-                "lastHighestBidTime": product["market"]["lastHighestBidTime"],
-                "lastSaleDate": product["market"]["lastSaleDate"],
-                "deadstockSoldRank": product["market"]["deadstockSoldRank"],
-            }
-            product_list.append(product_info)
-
-        df = pd.DataFrame(product_list)
-        return df
+    def loop_data(self, data: Dict) -> pd.DataFrame:
+        """Parse the raw data to create a DataFrame."""
+        product_list = [
+            {key: product["market"].get(key, None) for key in product["market"]}
+            for product in data["Products"]
+        ]
+        return pd.DataFrame(product_list)
 
     def run(self, queue: Queue) -> None:
-        """Main runner function for the scraper."""
+        """Main function that orchestrates the scraping process."""
         data = self.get_data()
-        df_concated = self.loop_data(data)
+        df = self.loop_data(data)
 
         if queue is not None:
-            queue.put((self.__class__.__name__, df_concated))
+            queue.put((self.__class__.__name__, df))
 
         self.driver.close()
