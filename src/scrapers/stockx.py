@@ -1,9 +1,10 @@
-"""Module for scraping data from StockX."""
+"""StockX scraper module."""
 
 import json
+import logging
 import time
-from multiprocessing.managers import DictProxy
 from queue import Queue
+from typing import Dict
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -11,84 +12,68 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
+# Initialize logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class StockX:
-    """A scraper for fetching shoe data from StockX."""
+    """Scraper for fetching shoe data from StockX."""
 
     def __init__(self, query: str = "jordan", results_per_page: str = "1000"):
-        """Initialize the scraper with query parameters."""
+        """Initialize the scraper with search parameters."""
+        logging.info("Initializing StockX scraper.")
+
         self.query = query
         self.results_per_page = results_per_page
-        self.driver = None
+        self.driver = webdriver.Chrome(
+            service=ChromeService(ChromeDriverManager().install())
+        )
 
-    def get_data(self) -> dict:
-        """Fetch data from the StockX API."""
+    def get_data(self) -> Dict:
+        """Fetch the raw data from the StockX API."""
+        logging.info("Fetching data from StockX.")
+
         url = f"https://stockx.com/api/browse?_search={self.query}&resultsPerPage={self.results_per_page}"
-        print(f"Fetching data from: {url}")
-
         self.driver.get(url)
-        time.sleep(2)  # Allow 2 seconds for the page to load
-
+        time.sleep(2)  # Allow the page to load
         page_source = self.driver.page_source
         soup = BeautifulSoup(page_source, "html.parser")
         json_data = soup.find("pre").text
 
+        logging.info("Data fetched successfully.")
         return json.loads(json_data)
 
-    def loop_data(self, data) -> pd.DataFrame:
-        """Loop through the data to create a DataFrame."""
-        product_list = []
+    def loop_data(self, data: Dict) -> pd.DataFrame:
+        """Parse the raw data to create a DataFrame."""
+        logging.info("Parsing raw data into DataFrame.")
 
-        for product in data["Products"]:
-            product_info = {
-                "Title": product["title"],
-                "shoeId": product["styleId"],
-                "LowestAsk": product["market"]["lowestAsk"],
-                "NumberOfAsks": product["market"]["numberOfAsks"],
-                "LastSale": product["market"]["lastSale"],
-                "lowestAskSize": product["market"]["lowestAskSize"],
-                "numberOfAsks": product["market"]["numberOfAsks"],
-                "hasAsks": product["market"]["hasAsks"],
-                "salesThisPeriod": product["market"]["salesThisPeriod"],
-                "salesLastPeriod": product["market"]["salesLastPeriod"],
-                "highestBid": product["market"]["highestBid"],
-                "highestBidSize": product["market"]["highestBidSize"],
-                "numberOfBids": product["market"]["numberOfBids"],
-                "hasBids": product["market"]["hasBids"],
-                "annualHigh": product["market"]["annualHigh"],
-                "annualLow": product["market"]["annualLow"],
-                "deadstockRangeLow": product["market"]["deadstockRangeLow"],
-                "deadstockRangeHigh": product["market"]["deadstockRangeHigh"],
-                "volatility": product["market"]["volatility"],
-                "deadstockSold": product["market"]["deadstockSold"],
-                "pricePremium": product["market"]["pricePremium"],
-                "averageDeadstockPrice": product["market"]["averageDeadstockPrice"],
-                "lastSale": product["market"]["lastSale"],
-                "lastSaleSize": product["market"]["lastSaleSize"],
-                "salesLast72Hours": product["market"]["salesLast72Hours"],
-                "changeValue": product["market"]["changeValue"],
-                "changePercentage": product["market"]["changePercentage"],
-                "absChangePercentage": product["market"]["absChangePercentage"],
-                "totalDollars": product["market"]["totalDollars"],
-                "lastLowestAskTime": product["market"]["lastLowestAskTime"],
-                "lastHighestBidTime": product["market"]["lastHighestBidTime"],
-                "lastSaleDate": product["market"]["lastSaleDate"],
-                "deadstockSoldRank": product["market"]["deadstockSoldRank"],
+        product_list = [
+            {
+                **{
+                    "Title": product.get("title", None),
+                    "styleId": product.get("styleId", None),
+                },
+                **{key: product["market"].get(key, None) for key in product["market"]},
             }
-            product_list.append(product_info)
+            for product in data["Products"]
+        ]
 
-        df = pd.DataFrame(product_list)
-        return df
+        logging.info("Data parsed successfully.")
+        return pd.DataFrame(product_list)
 
-    def run(self, queue: Queue = None) -> pd.DataFrame:
-        """Main runner function for the scraper."""
-        with webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install())
-        ) as self.driver:
-            data = self.get_data()
-            df_concated = self.loop_data(data)
+    def run(self, queue: Queue) -> None:
+        """Main function that orchestrates the scraping process."""
+        logging.info("Starting StockX scraper.")
+
+        data = self.get_data()
+        df = self.loop_data(data)
 
         if queue is not None:
-            queue.put((self.__class__.__name__, df_concated))
+            queue.put((self.__class__.__name__, df))
+            logging.info("DataFrame added to queue.")
 
-        return df_concated
+        self.driver.close()
+
+        logging.info("StockX scraper finished.")
