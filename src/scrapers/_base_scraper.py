@@ -2,6 +2,7 @@
 
 import abc
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -32,15 +33,14 @@ class BaseScraper(abc.ABC):
         """Abstract method for running the scraper."""
         pass
 
-    @abc.abstractmethod
-    def parse(self) -> Any:
-        """Abstract method for parsing the data."""
-        pass
-
     @staticmethod
     def save_file(df: pd.DataFrame, file_name: str) -> None:
         """Saving files."""
         xlsx_results_path = Path("xlsx_results")
+
+        if os.path.exists(xlsx_results_path) is False:
+            os.makedirs(xlsx_results_path)
+
         logging.info(f"Saving file: {file_name}")
 
         saving_path = Path(xlsx_results_path / f"{file_name}.xlsx")
