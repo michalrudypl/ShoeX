@@ -4,7 +4,8 @@ from queue import Queue
 import pandas as pd
 import requests
 
-from ..logger_module import get_logger
+from logger_module import get_logger
+
 from ._base_scraper import BaseScraper
 
 

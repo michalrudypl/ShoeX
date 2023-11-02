@@ -1,9 +1,10 @@
 """Analyze results of scraping."""
-import logging
 from typing import List
 
 import pandas as pd
 import requests
+
+from logger_module import get_logger
 
 
 class Analyzer:
@@ -11,6 +12,7 @@ class Analyzer:
 
     def __init__(self, df: pd.DataFrame) -> None:
         """Initialize the Analyzer with a DataFrame."""
+        self.logging = get_logger(self.__class__.__name__)
         self.df = df
         self.transaction_fee = 0.09
         self.payment_proc = 0.03
@@ -26,7 +28,7 @@ class Analyzer:
                 r.raise_for_status()
                 self._usd_to_pln = float(r.json()["rates"][0]["mid"])
             except requests.RequestException:
-                logging.warning("Error fetching exchange rate, defaulting to 4.")
+                self.logging.warning("Error fetching exchange rate, defaulting to 4.")
         return self._usd_to_pln
 
     def usd_prices_to_pln(self, df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
@@ -70,6 +72,6 @@ class Analyzer:
         )
 
         filtered_df = df[filter_conditions]
-        logging.info(f"Found {len(filtered_df)} profitable opportunities.")
+        self.logging.info(f"Found {len(filtered_df)} profitable opportunities.")
 
         return filtered_df

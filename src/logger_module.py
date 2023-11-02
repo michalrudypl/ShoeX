@@ -3,7 +3,7 @@ import logging
 import os
 
 
-def get_logger(class_name: str) -> logging.Logger:
+def get_logger(class_name: str = "MAIN") -> logging.Logger:
     """Generate and return a logger object for a given class name."""
 
     logger = logging.getLogger(class_name)

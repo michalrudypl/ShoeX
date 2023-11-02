@@ -5,7 +5,8 @@ from typing import Dict, List, Optional, Union
 import pandas as pd
 import requests
 
-from ..logger_module import get_logger
+from logger_module import get_logger
+
 from ._base_scraper import BaseScraper
 
 

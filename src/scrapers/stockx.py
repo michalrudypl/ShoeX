@@ -11,7 +11,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
-from ..logger_module import get_logger
+from logger_module import get_logger
+
 from ._base_scraper import BaseScraper
 
 
