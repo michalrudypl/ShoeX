@@ -1,75 +1,57 @@
-# ShoeX - Sneaker Profit Analytics
+# ShoeX - Sneaker Profit Analytics 📊👟
 
-## Description
+Welcome to **ShoeX**! Your go-to Python tool for scraping sneaker data across various online retailers, analyzing the profits, and mastering the sneaker resale game.
 
-ShoeX is a Python application designed to scrape sneaker data from various online retailers. The scraped data is transformed into a Pandas DataFrame, merged, and then analyzed to identify which sneakers are the most profitable to sell on StockX.
+![ShoeX Logo](path_to_logo_if_any.png)
 
-### Installation
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Scrapers](#scrapers)
+- [Data Analysis](#data-analysis)
+- [Contribution](#contribution)
+- [License](#license)
 
-Install the required Python packages using pip:
+## Features
+- Multi-source scraping: Fetch sneaker data from leading retailers like Adidas, Nike, and more.
+- Concurrent scraping: Uses multiprocessing for faster data extraction.
+- Comprehensive analytics: Identify the most profitable sneakers for resale on StockX.
+- Currency conversion: Seamlessly converts USD to PLN.
+- Code quality assurance: Integrated with tools like `black`, `isort`, and `flake8`.
 
-```bash
-pip install -r requirements.txt
-```
+## Installation
+To get started, ensure you have Python installed and then run:
+```pip install -r requirements.txt```
 
-## Code Quality Checks
-
-This project uses several code quality checks including `black`, `isort`, `flake8`, `pylint`, and `mypy`. You can run all these checks using the Bash script included in the repository:
-
-```bash
-./run_checks.sh
-```
 
 ## Usage
-
-1. **Clone the Repo**: 
+1. Clone the Repo:
     ```bash
     git clone https://github.com/yourusername/ShoeX.git
     ```
-  
-2. **Navigate to the Directory**:
+2. Navigate to the Directory:
     ```bash
     cd ShoeX
     ```
-
-3. **Run the Scraper**:
+3. Run the Scraper:
     ```bash
     python src/main.py
     ```
-   This will generate a DataFrame with the scraped sneaker data.
 
-### Main Script Structure
-
-The main script (`main.py`) performs several tasks:
-
-- Configures logging to `app.log`.
-- Uses multiprocessing to run various scrapers concurrently.
-- Merges the data into a single DataFrame.
-- Analyzes the data to identify profitable sneakers for selling on StockX.
-
-#### Logging Configuration
-
-The logging is configured as follows:
-
-- Filename: `app.log`
-- Format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
-- Date Format: `%d-%b-%y %H:%M:%S`
+## Scrapers
+- **Adidas Scraper**: Extracts data from Adidas official site.
+- **Nike Scraper**: Fetches latest sneaker listings from Nike.
+- **EOBUWIE Scraper**: Dedicated scraper for eobuwie.pl.
+- **StockX Scraper**: Grabs data specifically for resale insights on StockX.
 
 ## Data Analysis
+Dive deep into the sneaker market with our `Analyzer` class:
+- Convert sneaker prices between USD and PLN.
+- Compute final prices after considering fees and taxes.
+- Filter out sneakers based on profitability, demand, and volatility.
 
-The `Analyzer` class is responsible for analyzing the merged DataFrame. It performs several key operations:
+Check out `shoes_purchase_analyzer.py` for a detailed understanding.
 
-- **Currency Conversion**: It converts sneaker prices from USD to PLN using the current exchange rate from the NBP API, with a fallback to a hardcoded rate.
-  
-- **Price Formatting**: The class formats necessary columns and calculates a `finalPriceAfterTaxes` that takes into account various fees and taxes.
-  
-- **Profit Analysis**: Finally, the `Analyzer` filters the DataFrame to only include sneakers that have a significant price difference (`priceDiff > 50`), have some market demand (`numberOfBids > 0`), and are less volatile (`volatility < 1`).
-
-### Configuration in Analyzer
-
-- Transaction Fee: 9% (`0.09`)
-- Payment Processing Fee: 3% (`0.03`)
-- USD to PLN conversion: Fetched from NBP API or defaults to `4.0`
-- Delivery Cost: USD 5.45
-
-To understand more about how the analysis is performed, you can refer to the `Analyzer` class in the `shoes_purchase_analyzer.py` file.
+## Contribution
+Feel like adding a new scraper or enhancing the analytics? We welcome contributions! Just fork the repo, make your changes, and raise a PR.

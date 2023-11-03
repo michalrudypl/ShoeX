@@ -1,14 +1,12 @@
 """Eobuwie scraper."""
-import logging
 from queue import Queue
 
 import pandas as pd
 import requests
 
-from ._base_scraper import BaseScraper
+from logger_module import get_logger
 
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
+from ._base_scraper import BaseScraper
 
 
 class Eobuwie(BaseScraper):
@@ -17,7 +15,8 @@ class Eobuwie(BaseScraper):
     def __init__(self) -> None:
         """Init."""
         super().__init__()
-        logging.info("Initializing Eobuwie scraper.")
+        self.logging = get_logger(self.__class__.__name__)
+        self.logging.info("Initializing Eobuwie scraper.")
         self.url = "https://eobuwie.com.pl/t-api/rest/search/eobuwie/v5/search_web"
         self.dfs: list = []
         self.categories = (
@@ -51,16 +50,16 @@ class Eobuwie(BaseScraper):
 
     def parse(self, response: requests.Response) -> pd.DataFrame:
         """Parsing."""
-        logging.info("Parsing response.")
+        self.logging.info("Parsing response.")
 
         try:
             products = response.json()["products"]
         except Exception as e:
-            logging.error(f"Failed to parse JSON from response: {e}")
+            self.logging.error(f"Failed to parse JSON from response: {e}")
             return pd.DataFrame()
 
         if len(products) <= 0:
-            logging.warning("No products found in the response.")
+            self.logging.warning("No products found in the response.")
             return pd.DataFrame()
 
         data: dict = {"id": [], "price": [], "link": []}
@@ -76,15 +75,15 @@ class Eobuwie(BaseScraper):
                     + product["values"]["url_key"]["value"]["pl_PL"]
                 )
             except KeyError as e:
-                logging.error(f"Missing key in product data: {e}")
+                self.logging.error(f"Missing key in product data: {e}")
 
         return pd.DataFrame(data)
 
     def run(self, queue: Queue) -> None:
-        logging.info(f"Start scraping {self.__class__.__name__}")
+        self.logging.info(f"Start scraping {self.__class__.__name__}")
 
         for category in self.categories:
-            logging.info(f"Scraping category: {category}")
+            self.logging.info(f"Scraping category: {category}")
             self.params["categories[]"] = category
             while True:
                 df = self.parse(self._get(params=self.params))
@@ -92,7 +91,7 @@ class Eobuwie(BaseScraper):
                     self.dfs.append(df)
                     self.params["page"] += 1
                 else:
-                    logging.info(f"Reached the end of category: {category}")
+                    self.logging.info(f"Reached the end of category: {category}")
                     break
 
         df_concated = pd.concat(self.dfs)
@@ -101,4 +100,4 @@ class Eobuwie(BaseScraper):
 
         if queue is not None:
             queue.put((self.__class__.__name__, df_concated))
-            logging.info("Data added to the queue.")
+            self.logging.info("Data added to the queue.")

@@ -1,16 +1,13 @@
 """Nike scraper module."""
-import logging
 from queue import Queue
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import requests
 
-from ._base_scraper import BaseScraper
+from logger_module import get_logger
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+from ._base_scraper import BaseScraper
 
 
 class Nike(BaseScraper):
@@ -19,8 +16,9 @@ class Nike(BaseScraper):
     """
 
     def __init__(self) -> None:
-        logging.info("Initializing Nike scraper.")
         super().__init__()
+        self.logging = get_logger(self.__class__.__name__)
+        self.logging.info("Initializing Nike scraper.")
         self.url: str = "https://api.nike.com/cic/browse/v2"
         self.dfs: List[pd.DataFrame] = []  # List to store data frames
         self.common_params: Dict[str, str] = {
@@ -36,14 +34,15 @@ class Nike(BaseScraper):
         )
 
     def parse(self, response: requests.Response) -> pd.DataFrame:
-        logging.info("Parsing Nike data.")
+        """Parsing."""
+        self.logging.info("Parsing Nike data.")
         data: Dict[str, List[str]] = {"id": [], "price": [], "link": []}
         products: List[Dict[str, Union[str, Dict]]] = (
             response.json().get("data", {}).get("products", {}).get("products", [])
         )
 
         if not products:
-            logging.warning("No products found.")
+            self.logging.warning("No products found.")
             return pd.DataFrame()
 
         for product in products:
@@ -56,14 +55,14 @@ class Nike(BaseScraper):
                 data["price"].append(product_price)
                 data["link"].append(product_link)
 
-        logging.info("Parsing completed.")
+        self.logging.info("Parsing completed.")
         return pd.DataFrame(data)
 
     def create_endpoint(self, attribute: str, anchor: int) -> str:
         """
         Creating endpoint.
         """
-        logging.info("Creating endpoint for Nike API.")
+        self.logging.info("Creating endpoint for Nike API.")
         endpoint_path = (
             f"/product_feed/rollup_threads/v2?filter=marketplace(PL)&"
             f"filter=language(pl)&filter=employeePrice(true)&"
@@ -73,7 +72,7 @@ class Nike(BaseScraper):
         return endpoint_path
 
     def run(self, queue: Optional[Queue] = None) -> None:
-        logging.info("Start scraping %s", self.__class__.__name__)
+        self.logging.info("Start scraping %s", self.__class__.__name__)
         anchor: int = 0
 
         for attribute in self.attribute_ids:
@@ -87,14 +86,14 @@ class Nike(BaseScraper):
                     self.dfs.append(df)
                     anchor += 24
                 else:
-                    logging.info("No more data to fetch, breaking the loop.")
+                    self.logging.info("No more data to fetch, breaking the loop.")
                     break
 
-        logging.info("Nike scraping completed.")
+        self.logging.info("Nike scraping completed.")
 
         df_concated = pd.concat(self.dfs)
         self.save_file(df_concated, self.__class__.__name__)
 
         if queue:
             queue.put((self.__class__.__name__, df_concated))
-            logging.info("Data added to queue.")
+            self.logging.info("Data added to queue.")
