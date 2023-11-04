@@ -27,6 +27,7 @@ class BaseScraper(abc.ABC):
             "app-version": "2022.05.08.04",
         }
         self.url: str = ""
+        self._session = requests.session()
 
     @abc.abstractmethod
     def run(self) -> Any:
@@ -49,7 +50,9 @@ class BaseScraper(abc.ABC):
     def _get(self, params: dict) -> requests.Response:
         """Perform GET request and handle exceptions."""
         try:
-            r = requests.get(self.url, params=params, headers=self.headers, timeout=10)
+            r = self._session.get(
+                self.url, params=params, headers=self.headers, timeout=10
+            )
             r.raise_for_status()
             return r
         except requests.exceptions.HTTPError as errh:
